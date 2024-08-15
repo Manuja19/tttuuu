@@ -39,4 +39,4 @@ jobs:
           node -e "const lt = require('localtunnel'); lt({ port: 5900, subdomain: 'your-subdomain' }, (err, tunnel) => { if (err) { console.error(err); process.exit(1); } console.log('Localtunnel URL:', tunnel.url); });" &
 
       - name: Keep alive
-        run: timeout /t 3600
+        run: Start-Sleep -Seconds 3600
