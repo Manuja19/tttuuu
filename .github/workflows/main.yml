@@ -1,25 +1,65 @@
-name: Cl
+name: Android Emulator with VNC Access
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
-  build:
-
-    runs-on: windows-latest
-
+  emulator:
+    runs-on: ubuntu-latest
     steps:
-    - name: Download
-      run: Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-windows-amd64.zip -OutFile ngrok.zip
-    - name: Extract
-      run: Expand-Archive ngrok.zip
-    - name: Auth
-      run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
-      env:
-        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
-    - name: Enable TS
-      run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
-    - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-    - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
-    - run: Set-LocalUser -Name "runneradmin" -Password (ConvertTo-SecureString -AsPlainText "P@ssw0rd!" -Force)
-    - name: Create Tunnel
-      run: .\ngrok\ngrok.exe tcp 3389
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+
+      - name: Install Android SDK dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget curl lib32stdc++6 lib32z1 unzip
+
+      - name: Download Android command line tools
+        run: |
+          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O commandlinetools.zip
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          unzip -q commandlinetools.zip -d $HOME/android-sdk/cmdline-tools
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+
+      - name: Install Android SDK packages
+        run: |
+          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --install "platform-tools" "platforms;android-30" "emulator" "system-images;android-30;google_apis;x86_64"
+
+      - name: Create and start Android emulator
+        run: |
+          $HOME/android-sdk/cmdline-tools/latest/bin/avdmanager create avd -n test -k "system-images;android-30;google_apis;x86_64" --force
+          $HOME/android-sdk/emulator/emulator -avd test -no-window -no-audio -no-boot-anim &
+
+      - name: Wait for emulator to start
+        run: adb wait-for-device
+
+      - name: Unlock emulator screen
+        run: adb shell input keyevent 82
+
+      - name: Install and start VNC server
+        run: |
+          sudo apt-get install -y xfce4 xfce4-goodies tightvncserver
+          vncserver :1 -geometry 1280x800 -depth 24
+          export DISPLAY=:1
+
+      - name: Install Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Install Localtunnel
+        run: npm install -g localtunnel
+
+      - name: Start Localtunnel
+        run: lt --port 5901 --subdomain your-subdomain &
+
+      - name: Keep alive
+        run: sleep 1h
