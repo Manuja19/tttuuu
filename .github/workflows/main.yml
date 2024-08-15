@@ -34,12 +34,9 @@ jobs:
       - name: Install Localtunnel
         run: npm install -g localtunnel
 
-      - name: Start Localtunnel
+      - name: Start Localtunnel and Print URL
         run: |
-          lt --port 5900 --subdomain your-subdomain &
-
-      - name: Display Localtunnel URL
-        run: Start-Sleep -Seconds 5; curl http://localhost:4040/api/tunnels
+          node -e "const lt = require('localtunnel'); lt({ port: 5900, subdomain: 'your-subdomain' }, (err, tunnel) => { if (err) { console.error(err); process.exit(1); } console.log('Localtunnel URL:', tunnel.url); });" &
 
       - name: Keep alive
         run: timeout /t 3600
