@@ -1,0 +1,45 @@
+name: Setup LocalTunnel
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Start LocalTunnel
+      run: |
+        nohup node -e "
+        const fs = require('fs');
+        const lt = require('localtunnel');
+        lt({ port: 5900 }, (err, tunnel) => {
+            if (err) {
+                console.error(err);
+                process.exit(1);
+            }
+            console.log('Localtunnel URL:', tunnel.url);
+            fs.writeFileSync('localtunnel_url.txt', tunnel.url);
+        });" &
+      shell: bash
+
+    - name: Get LocalTunnel URL
+      id: get-url
+      run: echo "LOCAL_TUNNEL_URL=$(cat localtunnel_url.txt)" >> $GITHUB_ENV
+
+    - name: Echo the URL
+      run: echo "LocalTunnel is running at ${{ env.LOCAL_TUNNEL_URL }}"
