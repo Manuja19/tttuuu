@@ -33,9 +33,12 @@ jobs:
         run: |
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --install "platform-tools" "platforms;android-30" "emulator" "system-images;android-30;google_apis;x86_64"
 
-      - name: Create and start Android emulator
+      - name: Create Android emulator
         run: |
-          $HOME/android-sdk/cmdline-tools/latest/bin/avdmanager create avd -n test -k "system-images;android-30;google_apis;x86_64" --force
+          echo no | $HOME/android-sdk/cmdline-tools/latest/bin/avdmanager create avd -n test -k "system-images;android-30;google_apis;x86_64" --device "pixel"
+
+      - name: Start Android emulator
+        run: |
           $HOME/android-sdk/emulator/emulator -avd test -no-window -no-audio -no-boot-anim &
 
       - name: Wait for emulator to start
