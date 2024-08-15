@@ -33,6 +33,12 @@ jobs:
         run: |
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --sdk_root=$HOME/android-sdk --install "platform-tools" "platforms;android-30" "emulator" "system-images;android-30;google_apis;x86_64"
 
+      - name: Add Android SDK to PATH
+        run: |
+          echo "export ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "export PATH=$PATH:$HOME/android-sdk/platform-tools" >> $GITHUB_ENV
+        shell: bash
+
       - name: Create Android emulator
         run: |
           echo no | $HOME/android-sdk/cmdline-tools/latest/bin/avdmanager create avd -n test -k "system-images;android-30;google_apis;x86_64" --device "pixel"
